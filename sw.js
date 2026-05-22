@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srm-ls-supervision-v1';
+const CACHE_NAME = 'srm-ls-supervision-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,7 +9,6 @@ const ASSETS_TO_CACHE = [
   'https://github.com/BrahimDa-hub/srm-ls-dashboard/blob/main/icon-512.png?raw=true'
 ];
 
-// Phase d'installation du Service Worker
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -19,7 +18,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Phase d'activation et nettoyage des anciens caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -35,7 +33,6 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Stratégie de Cache-First avec repli sur le réseau pour une utilisation hors-ligne fluide
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -52,8 +49,6 @@ self.addEventListener('fetch', (event) => {
         });
         return networkResponse;
       });
-    }).catch(() => {
-      // Retourner une page blanche ou ressource par défaut si le réseau échoue
-    })
+    }).catch(() => {})
   );
 });

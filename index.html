@@ -49,22 +49,26 @@
             transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
-        /* Tous les titres en Yellow-Gold (#FFC72C) permanent */
+        /* Titres des boîtes : Blancs en mode nuit, noirs en mode jour */
         .card-title {
             font-size: 0.875rem !important;
             font-weight: 800 !important;
-            color: #FFC72C !important;
+            color: #ffffff !important;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
+        .light-mode .card-title {
+            color: #0f172a !important;
+        }
 
+        /* En-tête électrique immuable à bordures dorées */
         .electric-header {
             background: linear-gradient(135deg, #090d16 0%, #111c30 100%) !important;
             border: 2px solid #c89b3c !important;
             color: #ffffff !important;
         }
 
-        /* Vue PC par défaut sur Écrans Larges */
+        /* Mode Vue PC par défaut sur Écrans Larges */
         @media (min-width: 1024px) {
             body.vue-pc-active {
                 height: 100vh;
@@ -76,7 +80,7 @@
             }
         }
 
-        /* Adaptation Mobile Automatique */
+        /* Adaptation Mobile Automatique Intégrée */
         @media (max-width: 1023px) {
             body.vue-pc-active {
                 height: auto !important;
@@ -95,12 +99,12 @@
 
         .map-wrapper {
             position: relative;
-            background-size: cover;
+            background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
         }
 
-        /* Pins plus grands et luisants (glowing) */
+        /* Pins géographiques plus grands et luisants */
         .pin-indicator {
             position: absolute;
             transform: translate(-50%, -50%);
@@ -121,6 +125,7 @@
             50% { box-shadow: 0 0 20px 6px rgba(59, 130, 246, 1); transform: scale(1.15); }
         }
 
+        /* Sélecteurs stylisés et hautement lisibles */
         .themed-select {
             background-color: var(--bg-card);
             color: var(--text-main);
@@ -133,6 +138,17 @@
         .light-mode .themed-select option {
             background-color: #ffffff !important;
             color: #0f172a !important;
+        }
+
+        /* Menu déroulant de l'en-tête (Toujours lisible sur fond sombre) */
+        .header-select {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+            border: 1px solid #c89b3c;
+        }
+        .header-select option {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
         }
 
         ::-webkit-scrollbar {
@@ -162,7 +178,7 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <button id="installBtn" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold uppercase bg-amber-600 hover:bg-amber-700 text-white transition-all shadow">
+            <button id="installBtn" class="hidden items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold uppercase bg-amber-600 hover:bg-amber-700 text-white transition-all shadow">
                 📦 Installer l'App
             </button>
 
@@ -172,7 +188,7 @@
 
             <div class="flex items-center gap-2 px-2.5 py-1 rounded border border-slate-700 bg-[#0f172a]">
                 <label for="monthSelector" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Vue :</label>
-                <select id="monthSelector" class="bg-transparent text-xs font-bold text-white outline-none cursor-pointer p-0"></select>
+                <select id="monthSelector" class="header-select text-xs font-bold outline-none cursor-pointer p-0 rounded"></select>
             </div>
         </div>
     </header>
@@ -217,7 +233,7 @@
                     <h2 class="card-title">Cartographie par Province</h2>
                 </div>
                 <div class="map-wrapper flex-1 w-full border-y border-slate-800 bg-slate-950/20 flex items-center justify-center min-h-[140px] p-0 my-0">
-                    <img id="region-map" src="https://github.com/BrahimDa-hub/srm-ls-dashboard/blob/main/laayounemap.png?raw=true" alt="Carte Laayoune" class="w-full h-full object-cover p-0 m-0">
+                    <img id="region-map" src="https://github.com/BrahimDa-hub/srm-ls-dashboard/blob/main/laayounemap.png?raw=true" alt="Carte Laayoune" class="w-full h-full object-contain p-0 m-0">
                     
                     <div class="pin-indicator" data-province="Tarfaya" style="top: 25%; left: 45%;"><div class="glowing-pin"></div></div>
                     <div class="pin-indicator" data-province="Laayoune" style="top: 45%; left: 35%;"><div class="glowing-pin"></div></div>
@@ -226,7 +242,7 @@
                 </div>
                 
                 <div class="p-3 bg-slate-950/40 text-xs text-slate-300 leading-relaxed shrink-0 border-t border-slate-800 font-medium">
-                    <strong class="text-[#FFC72C] block mb-1 text-sm font-extrabold">Objectif stratégique du Système de Supervision SRM-LS :</strong>
+                    <strong class="text-amber-500 block mb-1 text-sm font-extrabold">Objectif stratégique du Système de Supervision SRM-LS :</strong>
                     Cette infrastructure de supervision avancée centralise la gestion et le suivi en temps réel des cessions de flux énergétiques acheminées depuis le poste source de l'ONEE vers le réseau d'interconnexion régional géré par SRM-LS. Grâce à cette cartographie dynamique et aux analyses décisionnelles associées, les équipes d'exploitation peuvent piloter la charge globale, isoler instantanément les profils de consommation par province ou par poste, suivre de près les pointes de puissance, et détecter immédiatement les anomalies de comptage ou écarts de mesure significatifs entre compteurs principaux et compteurs de contrôle.
                 </div>
             </div>
@@ -251,7 +267,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3 flex-1 min-h-0">
-                <div class="dashboard-card p-1.5 flex flex-col md:col-span-5 min-h-0 h-full chart-container-box">
+                <div class="dashboard-card p-2.5 flex flex-col md:col-span-5 min-h-0 h-full chart-container-box">
                     <h2 class="card-title shrink-0">Transformateurs les plus Sollicités</h2>
                     <div id="transformersChart" class="w-full flex-1"></div>
                 </div>
@@ -269,7 +285,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
-                <div class="dashboard-card p-1.5 flex flex-col min-h-0 h-full chart-container-box">
+                <div class="dashboard-card p-2.5 flex flex-col min-h-0 h-full chart-container-box">
                     <div class="flex justify-between items-center shrink-0">
                         <h2 class="card-title">Compteurs Principal/Contrôle Erreur (%)</h2>
                         <select id="errorMonthSelector" class="themed-select text-[10px] font-semibold rounded px-1.5 py-0.5 outline-none"></select>
@@ -277,7 +293,7 @@
                     <div id="errorChart" class="w-full flex-1"></div>
                 </div>
 
-                <div class="dashboard-card p-1.5 flex flex-col min-h-0 h-full chart-container-box">
+                <div class="dashboard-card p-2.5 flex flex-col min-h-0 h-full chart-container-box">
                     <div class="flex justify-between items-center shrink-0">
                         <h2 class="card-title">Comparaison sur tous les mois</h2>
                         <select id="compareMetricSelector" class="themed-select text-[10px] font-semibold rounded px-1.5 py-0.5 outline-none">
@@ -292,6 +308,8 @@
 
         </div>
     </main>
+
+    <div id="map-tooltip" class="fixed opacity-0 pointer-events-none bg-slate-900 border border-slate-700 text-white p-2.5 rounded shadow-2xl transition-opacity duration-150 z-[9999] min-w-[200px]"></div>
 
     <script>
         const RAW_CSV_DATA = `Mois / Année,Province,Poste,Transformateur,S nominal (KVA),Pmax (kw),Q coincident,Plein (Débité),Pointe (Débité),Creux (Débité),E.Active Débité (principale),E.Active Débité (control),Plein (Reçu),Pointe (Reçu),Creux (Reçu),E.Active Reçu,Taux de Charge
@@ -411,6 +429,18 @@
             return data;
         }
 
+        // Palette sémantique s'adaptant dynamiquement au mode jour / nuit (Blanc pur vs Noir profond)
+        function getChartColors() {
+            return {
+                text: isDarkMode ? '#ffffff' : '#0f172a',
+                splitLine: isDarkMode ? '#1e293d' : '#e2e8f0',
+                bg: 'transparent',
+                tooltipBg: isDarkMode ? '#111823' : '#ffffff',
+                tooltipBorder: isDarkMode ? '#374151' : '#cbd5e1',
+                textMain: isDarkMode ? '#ffffff' : '#0f172a'
+            };
+        }
+
         function initApp() {
             appData = parseCSV(RAW_CSV_DATA);
             months = [...new Set(appData.map(d => d['Mois / Année']).filter(m => m))].sort();
@@ -506,16 +536,6 @@
             renderMonthlyChart();
             
             window.addEventListener('resize', resizeCharts);
-        }
-
-        function resizeCharts() {
-            treemapChart.resize();
-            tarifsChart.resize();
-            provinceChart.resize();
-            transformersChart.resize();
-            monthlyChart.resize();
-            errorChart.resize();
-            gaugeChart.resize();
         }
 
         function updateVisualTitles() {
@@ -615,8 +635,8 @@
                             p.firstElementChild.style.backgroundColor = '#3b82f6';
                             p.firstElementChild.style.boxShadow = '0 0 12px 3px rgba(59, 130, 246, 0.7)';
                         });
-                        pin.firstElementChild.style.backgroundColor = '#FFC72C';
-                        pin.firstElementChild.style.boxShadow = '0 0 16px 5px rgba(255, 199, 44, 0.9)';
+                        pin.firstElementChild.style.backgroundColor = '#eab308';
+                        pin.firstElementChild.style.boxShadow = '0 0 20px 6px rgba(234, 179, 8, 1)';
                     }
                     selectedPoste = null; selectedTransformer = null;
                     document.getElementById('gaugeTrSelector').value = "auto";
@@ -637,16 +657,13 @@
 
             treemapChart.setOption({
                 tooltip: { 
-                    backgroundColor: '#111823', 
-                    borderColor: '#374151', 
-                    textStyle: { color: '#ffffff' },
+                    backgroundColor: '#111823', borderColor: '#374151', textStyle: { color: '#ffffff' },
                     formatter: (p) => '<b>' + p.name + '</b><br/>Consommation : ' + formatNumber(p.value) + ' kWh'
                 },
                 series: [{
                     type: 'treemap', data: treemapData, roam: false, nodeClick: false,
                     label: { 
-                        show: true, 
-                        formatter: (params) => params.name + '\n' + formatNumber(params.value) + ' kWh', 
+                        show: true, formatter: (params) => params.name + '\n' + formatNumber(params.value) + ' kWh', 
                         fontSize: 10, fontWeight: '600', color: '#fff' 
                     },
                     itemStyle: { borderColor: '#111823', gapWidth: 1 }
@@ -654,7 +671,6 @@
             }, true);
         }
 
-        // Répartition des 3 Tarifs agrandie avec marges réduites
         function renderTarifs(data) {
             let plein = 0, pointe = 0, creux = 0;
             let dataToProcess = data;
@@ -668,6 +684,7 @@
                 creux += parseNumericValue(d['Creux (Débité)']);
             });
 
+            let c = getChartColors();
             tarifsChart.setOption({
                 tooltip: { 
                     trigger: 'item', backgroundColor: '#111823', borderColor: '#374151', textStyle: { color: '#ffffff' },
@@ -675,7 +692,7 @@
                 },
                 legend: { 
                     show: true, bottom: 0, itemWidth: 10, itemHeight: 10, 
-                    textStyle: { color: '#ffffff', fontSize: 9, fontWeight: 'bold' } 
+                    textStyle: { color: c.text, fontSize: 9, fontWeight: 'bold' } 
                 },
                 color: ['#f1c40f', '#e74c3c', '#3498db'],
                 series: [{
@@ -714,7 +731,6 @@
             }, true);
         }
 
-        // Configuration Axes et Valeurs en Yellow-Gold (#FFC72C) permanent
         function renderTransformers(data) {
             let transMap = {};
             data.forEach(d => {
@@ -727,18 +743,19 @@
                 .map(k => ({ name: k, value: transMap[k] }))
                 .sort((a, b) => b.value - a.value).slice(0, 10).reverse();
 
+            let c = getChartColors();
             transformersChart.setOption({
                 tooltip: { trigger: 'axis', backgroundColor: '#111823', borderColor: '#374151', textStyle: { color: '#ffffff' } },
                 grid: { left: '2%', right: '20%', bottom: '2%', top: '4%', containLabel: true },
                 xAxis: { 
                     type: 'value', splitLine: { lineStyle: { color: '#1e293d' } }, 
-                    axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold', formatter: (v) => formatNumber(v) } 
+                    axisLabel: { color: c.text, fontSize: 11, fontWeight: 'bold', formatter: (v) => formatNumber(v) } 
                 },
-                yAxis: { type: 'category', data: sorted.map(i => i.name), axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold' } },
+                yAxis: { type: 'category', data: sorted.map(i => i.name), axisLabel: { color: c.text, fontSize: 11, fontWeight: 'bold' } },
                 series: [{
                     type: 'bar', data: sorted.map(i => i.value), barWidth: '60%',
                     label: {
-                        show: true, position: 'right', color: '#FFC72C', fontSize: 9, fontWeight: 'bold', formatter: (p) => formatNumber(p.value)
+                        show: true, position: 'right', color: c.text, fontSize: 9, fontWeight: 'bold', formatter: (p) => formatNumber(p.value)
                     },
                     itemStyle: { 
                         color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#f1c40f' }, { offset: 1, color: '#e74c3c' }]),
@@ -748,7 +765,6 @@
             }, true);
         }
 
-        // Jauge de charge : Échelle, graduations et aiguille épaissie en #FFC72C permanent
         function renderSingleGauge(data) {
             let trData = [];
             if (selectedTransformer) {
@@ -770,25 +786,25 @@
                 { offset: 0, color: '#4caf50' }, { offset: 0.6, color: '#ff9800' }, { offset: 1, color: '#f44336' }    
             ]);
 
+            let c = getChartColors();
             gaugeChart.setOption({
                 series: [{
                     type: 'gauge', startAngle: 180, endAngle: 0, radius: '115%', center: ['50%', '85%'],
                     min: 0, max: 150,
-                    pointer: { length: '75%', width: 8, itemStyle: { color: '#FFC72C' } }, // Aiguille épaisse Jaune-Or
+                    pointer: { length: '75%', width: 8, itemStyle: { color: c.text } }, // Aiguille adaptative épaissie
                     axisLine: { lineStyle: { width: 22, color: [[1, '#e9ecef']] } }, 
                     progress: { show: true, width: 22, itemStyle: { color: gaugeGradient } },
                     splitLine: { show: false }, axisTick: { show: false },
-                    axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold', distance: -38 }, // Graduations Jaune-Or
+                    axisLabel: { color: c.text, fontSize: 11, fontWeight: 'bold', distance: -38 }, // Graduation adaptative pure
                     title: { show: false },
                     detail: { 
-                        offsetCenter: [0, '20%'], color: '#FFC72C', fontSize: 20, fontWeight: '800', formatter: '{value}%', show: true
+                        offsetCenter: [0, '20%'], color: c.text, fontSize: 20, fontWeight: '800', formatter: '{value}%', show: true
                     },
                     data: [{ value: parseFloat(val.toFixed(1)), name: name }]
                 }]
             }, true);
         }
 
-        // Axes de l'écart de comptage configurés en #FFC72C permanent
         function renderErrorChart(month) {
             const monthData = month === "Année" ? appData : appData.filter(d => d['Mois / Année'] === month);
             let categories = [], seriesData = [];
@@ -812,16 +828,16 @@
                 }
             }
 
+            let c = getChartColors();
             errorChart.setOption({
                 tooltip: { trigger: 'axis', formatter: (params) => '<b>' + params[0].name + '</b><br/>Écart : ' + params[0].value.toFixed(3) + '%' },
                 grid: { left: '2%', right: '2%', bottom: '5%', top: '8%', containLabel: true },
-                xAxis: { type: 'category', data: categories, axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold', rotate: 18 } },
-                yAxis: { type: 'value', axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold' } },
+                xAxis: { type: 'category', data: categories, axisLabel: { color: c.text, fontSize: 11, fontWeight: 'bold', rotate: 18 } },
+                yAxis: { type: 'value', axisLabel: { color: c.text, fontSize: 11, fontWeight: 'bold' } },
                 series: [{ type: 'bar', data: seriesData, barWidth: '45%' }]
             }, true);
         }
 
-        // Raccourcissement de l'échelle de comparaison en GWh avec axes en #FFC72C permanent
         function renderMonthlyChart() {
             const metric = document.getElementById('compareMetricSelector').value;
             let xAxisData = [], seriesData = [];
@@ -840,31 +856,33 @@
                 else if (metric === 'recu') seriesData.push(recu);
             });
 
+            let c = getChartColors();
             monthlyChart.setOption({
                 tooltip: { trigger: 'axis', formatter: (params) => 'Mois ' + params[0].name + '<br/>Total : <b>' + formatNumber(params[0].value) + ' kWh</b>' },
                 grid: { left: '2%', right: '2%', bottom: '2%', top: '10%', containLabel: true },
-                xAxis: { type: 'category', data: xAxisData, axisLabel: { color: '#FFC72C', fontWeight: 'bold', fontSize: 11 } },
+                xAxis: { type: 'category', data: xAxisData, axisLabel: { color: c.text, fontWeight: 'bold', fontSize: 11 } },
                 yAxis: { 
                     type: 'value', splitLine: { lineStyle: { color: '#1e293d' } }, 
                     axisLabel: { 
-                        color: '#FFC72C', fontSize: 11, fontWeight: 'bold',
+                        color: c.text, fontSize: 11, fontWeight: 'bold',
                         formatter: (value) => (value / 1000000) + ' GWh'
                     } 
                 },
                 series: [{
                     type: 'bar', data: seriesData, barWidth: '35%',
                     itemStyle: { color: '#1976d2', borderRadius: [3, 3, 0, 0] },
-                    label: { show: true, position: 'top', color: '#FFC72C', fontSize: 9, fontWeight: 'bold', formatter: (p) => formatNumber(p.value) }
+                    label: { show: true, position: 'top', color: c.text, fontSize: 9, fontWeight: 'bold', formatter: (p) => formatNumber(p.value) }
                 }]
             }, true);
         }
 
-        // --- PIPELINE D'INSTALLATION DE LA PWA ---
+        // Gestion de l'affichage adaptatif du bouton d'installation PWA
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             const installBtn = document.getElementById('installBtn');
-            installBtn.classList.remove('hidden'); // Devient visible uniquement si l'application n'est pas installée
+            installBtn.classList.remove('hidden');
+            installBtn.classList.add('flex');
             
             installBtn.addEventListener('click', async () => {
                 if (deferredPrompt) {
@@ -872,6 +890,7 @@
                     const { outcome } = await deferredPrompt.userChoice;
                     if (outcome === 'accepted') {
                         installBtn.classList.add('hidden');
+                        installBtn.classList.remove('flex');
                     }
                     deferredPrompt = null;
                 }
@@ -883,12 +902,11 @@
             deferredPrompt = null;
         });
 
-        // Enregistrement du Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker enregistré avec succès.', reg.scope))
-                    .catch(err => console.error('Échec de l\'enregistrement du Service Worker.', err));
+                    .then(reg => console.log('Service Worker opérationnel.', reg.scope))
+                    .catch(err => console.error('Erreur Service Worker.', err));
             });
         }
 
@@ -899,6 +917,16 @@
             updateDashboard();
             renderMonthlyChart();
         });
+
+        function resizeCharts() {
+            treemapChart.resize();
+            tarifsChart.resize();
+            provinceChart.resize();
+            transformersChart.resize();
+            monthlyChart.resize();
+            errorChart.resize();
+            gaugeChart.resize();
+        }
 
         window.addEventListener('DOMContentLoaded', initApp);
     </script>

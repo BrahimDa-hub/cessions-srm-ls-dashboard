@@ -1,0 +1,21 @@
+{
+  "short_name": "SRM-LS Engine",
+  "name": "SRM-LS Supervision App - Cessions Energie",
+  "icons": [
+    {
+      "src": "https://github.com/BrahimDa-hub/srm-ls-dashboard/blob/main/icon-192.png?raw=true",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://github.com/BrahimDa-hub/srm-ls-dashboard/blob/main/icon-512.png?raw=true",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
+  "display": "standalone",
+  "orientation": "landscape"
+}

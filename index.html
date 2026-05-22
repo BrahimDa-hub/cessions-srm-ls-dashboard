@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord SRM-LS - Distribution d'Énergie</title>
+    
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0b0f19">
+    <link rel="apple-touch-icon" href="https://github.com/BrahimDa-hub/srm-ls-dashboard/blob/main/icon-192.png?raw=true">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #111823;
+            --border-color: #1e293d;
+            --text-main: #ffffff;
+            --text-muted: #8fa0b5;
+        }
+
+        .light-mode {
+            --bg-main: #f1f5f9;
+            --bg-card: #ffffff;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .dashboard-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* Tous les titres en Yellow-Gold (#FFC72C) permanent */
+        .card-title {
+            font-size: 0.875rem !important;
+            font-weight: 800 !important;
+            color: #FFC72C !important;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .electric-header {
+            background: linear-gradient(135deg, #090d16 0%, #111c30 100%) !important;
+            border: 2px solid #c89b3c !important;
+            color: #ffffff !important;
+        }
+
+        /* Vue PC par défaut sur Écrans Larges */
+        @media (min-width: 1024px) {
+            body.vue-pc-active {
+                height: 100vh;
+                overflow: hidden;
+                padding: 0.75rem !important;
+            }
+            body.vue-pc-active .main-container {
+                height: calc(100vh - 85px) !important;
+            }
+        }
+
+        /* Adaptation Mobile Automatique */
+        @media (max-width: 1023px) {
+            body.vue-pc-active {
+                height: auto !important;
+                overflow: auto !important;
+            }
+            .main-container {
+                height: auto !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            .chart-container-box {
+                min-height: 280px !important;
+                height: 280px !important;
+            }
+        }
+
+        .map-wrapper {
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* Pins plus grands et luisants (glowing) */
+        .pin-indicator {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            z-index: 20;
+        }
+        .glowing-pin {
+            width: 1.25rem;
+            height: 1.25rem;
+            background-color: #3b82f6;
+            border: 2px solid #ffffff;
+            border-radius: 9999px;
+            box-shadow: 0 0 14px 4px rgba(59, 130, 246, 0.8);
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 12px 3px rgba(59, 130, 246, 0.7); transform: scale(1); }
+            50% { box-shadow: 0 0 20px 6px rgba(59, 130, 246, 1); transform: scale(1.15); }
+        }
+
+        .themed-select {
+            background-color: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+        .themed-select option {
+            background-color: #111823 !important;
+            color: #ffffff !important;
+        }
+        .light-mode .themed-select option {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(143, 160, 181, 0.3);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="p-3 space-y-3 min-h-screen vue-pc-active flex flex-col">
+
+    <header class="electric-header px-5 py-2 flex flex-wrap justify-between items-center gap-4 shrink-0 relative rounded shadow-lg">
+        <div class="flex items-center gap-3.5">
+            <div class="w-9 h-9 bg-white rounded p-0.5 flex items-center justify-center overflow-hidden shadow">
+                <img src="https://github.com/BrahimDa-hub/srm-ls-dashboard/blob/main/icon-512.png?raw=true" alt="Logo" class="max-w-full max-h-full object-contain">
+            </div>
+            <div>
+                <h1 class="text-sm font-bold tracking-tight text-white">SRM-LS | Cessions Energie PS ONEE</h1>
+                <p class="text-[10px] font-extrabold text-[#c89b3c] tracking-wider uppercase">PAR: DAOUD IBRAHIM</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button id="installBtn" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold uppercase bg-amber-600 hover:bg-amber-700 text-white transition-all shadow">
+                📦 Installer l'App
+            </button>
+
+            <button id="themeBtn" class="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold uppercase border border-slate-700 bg-slate-800/60 text-white hover:bg-slate-800 transition-all">
+                ☀️ Jour
+            </button>
+
+            <div class="flex items-center gap-2 px-2.5 py-1 rounded border border-slate-700 bg-[#0f172a]">
+                <label for="monthSelector" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Vue :</label>
+                <select id="monthSelector" class="bg-transparent text-xs font-bold text-white outline-none cursor-pointer p-0"></select>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 min-h-0">
+        
+        <div class="col-span-12 lg:col-span-5 flex flex-col gap-3 min-h-0 h-full">
+            
+            <div class="grid grid-cols-2 gap-3 shrink-0">
+                <div class="dashboard-card p-2.5 flex flex-col justify-between border-l-4 border-cyan-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Énergie Fournie</p>
+                    <div class="flex items-baseline justify-between mt-0.5">
+                        <h3 class="text-base font-extrabold tracking-tight" id="kpi-fournie">0</h3>
+                        <span class="text-[9px] font-medium text-slate-500">kWh</span>
+                    </div>
+                </div>
+                <div class="dashboard-card p-2.5 flex flex-col justify-between border-l-4 border-green-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Énergie Débitée</p>
+                    <div class="flex items-baseline justify-between mt-0.5">
+                        <h3 class="text-base font-extrabold tracking-tight" id="kpi-debite">0</h3>
+                        <span class="text-[9px] font-medium text-slate-500">kWh</span>
+                    </div>
+                </div>
+                <div class="dashboard-card p-2.5 flex flex-col justify-between border-l-4 border-red-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Total Énergie Reçue</p>
+                    <div class="flex items-baseline justify-between mt-0.5">
+                        <h3 class="text-base font-extrabold tracking-tight" id="kpi-recu">0</h3>
+                        <span class="text-[9px] font-medium text-slate-500">kWh</span>
+                    </div>
+                </div>
+                <div class="dashboard-card p-2.5 flex flex-col justify-between border-l-4 border-purple-500">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Transformateurs Actifs</p>
+                    <div class="flex items-center justify-between mt-0.5">
+                        <h3 class="text-base font-extrabold tracking-tight" id="kpi-trans">0</h3>
+                        <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_#22c55e]"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div class="px-3 pt-2 pb-0.5 shrink-0">
+                    <h2 class="card-title">Cartographie par Province</h2>
+                </div>
+                <div class="map-wrapper flex-1 w-full border-y border-slate-800 bg-slate-950/20 flex items-center justify-center min-h-[140px] p-0 my-0">
+                    <img id="region-map" src="https://github.com/BrahimDa-hub/srm-ls-dashboard/blob/main/laayounemap.png?raw=true" alt="Carte Laayoune" class="w-full h-full object-cover p-0 m-0">
+                    
+                    <div class="pin-indicator" data-province="Tarfaya" style="top: 25%; left: 45%;"><div class="glowing-pin"></div></div>
+                    <div class="pin-indicator" data-province="Laayoune" style="top: 45%; left: 35%;"><div class="glowing-pin"></div></div>
+                    <div class="pin-indicator" data-province="Essemara" style="top: 50%; left: 65%;"><div class="glowing-pin"></div></div>
+                    <div class="pin-indicator" data-province="Boujdour" style="top: 75%; left: 25%;"><div class="glowing-pin"></div></div>
+                </div>
+                
+                <div class="p-3 bg-slate-950/40 text-xs text-slate-300 leading-relaxed shrink-0 border-t border-slate-800 font-medium">
+                    <strong class="text-[#FFC72C] block mb-1 text-sm font-extrabold">Objectif stratégique du Système de Supervision SRM-LS :</strong>
+                    Cette infrastructure de supervision avancée centralise la gestion et le suivi en temps réel des cessions de flux énergétiques acheminées depuis le poste source de l'ONEE vers le réseau d'interconnexion régional géré par SRM-LS. Grâce à cette cartographie dynamique et aux analyses décisionnelles associées, les équipes d'exploitation peuvent piloter la charge globale, isoler instantanément les profils de consommation par province ou par poste, suivre de près les pointes de puissance, et détecter immédiatement les anomalies de comptage ou écarts de mesure significatifs entre compteurs principaux et compteurs de contrôle.
+                </div>
+            </div>
+        </div>
+
+        <div class="col-span-12 lg:col-span-7 flex flex-col gap-3 min-h-0 h-full overflow-y-auto lg:overflow-visible" id="rightWorkspace">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
+                <div class="dashboard-card p-1 flex flex-col min-h-0 h-full chart-container-box">
+                    <div class="flex justify-between items-center px-2 pt-1 shrink-0">
+                        <h2 class="card-title">Transformateur le plus chargé</h2>
+                        <select id="gaugeTrSelector" class="themed-select text-[10px] font-semibold rounded px-1.5 py-0.5 outline-none"></select>
+                    </div>
+                    <div id="gauge-selected-tr" class="text-[11px] font-bold text-amber-400 text-center mt-0.5 shrink-0 min-h-[16px]"></div>
+                    <div id="single-gauge-box" class="w-full flex-1 m-0 p-0"></div>
+                </div>
+
+                <div class="dashboard-card p-1 flex flex-col min-h-0 h-full chart-container-box">
+                    <h2 id="treemap-title" class="card-title px-2 pt-1 shrink-0 truncate">Consommation par Poste (Treemap)</h2>
+                    <div id="treemapChart" class="w-full flex-1 m-0 p-0"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 flex-1 min-h-0">
+                <div class="dashboard-card p-1.5 flex flex-col md:col-span-5 min-h-0 h-full chart-container-box">
+                    <h2 class="card-title shrink-0">Transformateurs les plus Sollicités</h2>
+                    <div id="transformersChart" class="w-full flex-1"></div>
+                </div>
+                
+                <div class="md:col-span-7 grid grid-cols-2 gap-3 min-h-0 h-full">
+                    <div class="dashboard-card p-1 flex flex-col min-h-0 h-full chart-container-box">
+                        <h2 id="tarifs-title" class="card-title shrink-0 truncate">Répartition des 3 Tarifs</h2>
+                        <div id="tarifsChart" class="w-full flex-1"></div>
+                    </div>
+                    <div class="dashboard-card p-1 flex flex-col min-h-0 h-full chart-container-box">
+                        <h2 id="province-title" class="card-title shrink-0 truncate">Énergie par Province</h2>
+                        <div id="provinceChart" class="w-full flex-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
+                <div class="dashboard-card p-1.5 flex flex-col min-h-0 h-full chart-container-box">
+                    <div class="flex justify-between items-center shrink-0">
+                        <h2 class="card-title">Compteurs Principal/Contrôle Erreur (%)</h2>
+                        <select id="errorMonthSelector" class="themed-select text-[10px] font-semibold rounded px-1.5 py-0.5 outline-none"></select>
+                    </div>
+                    <div id="errorChart" class="w-full flex-1"></div>
+                </div>
+
+                <div class="dashboard-card p-1.5 flex flex-col min-h-0 h-full chart-container-box">
+                    <div class="flex justify-between items-center shrink-0">
+                        <h2 class="card-title">Comparaison sur tous les mois</h2>
+                        <select id="compareMetricSelector" class="themed-select text-[10px] font-semibold rounded px-1.5 py-0.5 outline-none">
+                            <option value="fournie">Énergie Fournie</option>
+                            <option value="debite">Énergie Débitée</option>
+                            <option value="recu">Énergie Reçue</option>
+                        </select>
+                    </div>
+                    <div id="monthlyChart" class="w-full flex-1"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const RAW_CSV_DATA = `Mois / Année,Province,Poste,Transformateur,S nominal (KVA),Pmax (kw),Q coincident,Plein (Débité),Pointe (Débité),Creux (Débité),E.Active Débité (principale),E.Active Débité (control),Plein (Reçu),Pointe (Reçu),Creux (Reçu),E.Active Reçu,Taux de Charge
+01/2026,Laayoune,FOUM EL OUED,TR N°3 F.O,40000.000,14572.000,190.080,3420870.000,1811490.000,2759400.000,7991760.000,7991360.000,0.000,0.000,0.000,0.000,36.433
+01/2026,Laayoune,FOUM EL OUED,TR N°4 F.O,40000.000,14509.000,95.040,3401870.000,1800830.000,2743990.000,7946690.000,7949190.000,0.000,0.000,0.000,0.000,36.273
+01/2026,Laayoune,LAAYOUNE,TR N°3 LA,40000.000,37065.000,6019.200,6872120.000,3875800.000,4734080.000,15482000.000,15480000.000,0.000,0.000,0.000,0.000,93.876
+01/2026,Laayoune,LAAYOUNE,TR N°4 LA,40000.000,27055.000,887.040,56629.000,118257.000,46892.000,221776.000,221000.000,0.000,0.000,0.000,0.000,67.674
+01/2026,Boujdour,BOUJDOUR,AUX BJ,50.000,0.000,0.000,331.000,0.000,0.000,331.000,331.000,0.000,0.000,0.000,0.000,0.000
+01/2026,Boujdour,BOUJDOUR,TR N°1 BJ,20000.000,8010.000,112.000,283290.000,815130.000,1441140.000,2539560.000,2539560.000,1170260.000,91740.000,10.000,1262020.000,40.054
+01/2026,Boujdour,BOUJDOUR,TR N°2 BJ,20000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+01/2026,Essemara,ES-SMARA,AUX SM,50.000,0.000,0.000,2774.000,1399.000,2582.000,6754.000,6754.000,0.000,0.000,0.000,0.000,0.000
+01/2026,Essemara,ES-SMARA,TR N°1 SM,10000.000,4989.000,205.920,122853.000,87381.000,98770.000,309005.000,224895.000,0.000,0.000,0.000,0.000,49.932
+01/2026,Essemara,ES-SMARA,TR N°2 SM,10000.000,5203.000,261.360,889409.000,597468.000,802609.000,2289490.000,2290020.000,0.000,0.000,0.000,0.000,52.096
+01/2026,Essemara,SIDI KHATARI,AUX KH,50.000,0.000,0.000,1757.000,935.000,1718.000,4410.000,4410.000,0.000,0.000,0.000,0.000,0.000
+01/2026,Essemara,SIDI KHATARI,TR N°1 KH,5000.000,673.000,273.240,172635.000,87644.000,152892.000,413171.000,413099.000,0.000,0.000,0.000,0.000,14.527
+01/2026,Tarfaya,TARFAYA,TR N°1 TRF,40000.000,4730.000,0.000,846730.000,580350.000,950320.000,2377400.000,2377290.000,0.000,0.000,0.000,0.000,11.825
+01/2026,Tarfaya,TARFAYA,TR N°2 TRF,40000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+01/2026,Laayoune,AL OMRAN,TR N°3 OM,40000.000,13392.000,748.800,474830.000,343123.000,344635.000,1162590.000,1164320.000,0.000,0.000,0.000,0.000,33.532
+01/2026,Laayoune,AL OMRAN,TR N°4 OM,40000.000,12182.000,259.200,103075.000,79924.000,93201.000,276201.000,276470.000,9.000,0.000,0.000,0.000,30.462
+02/2026,Laayoune,FOUM EL OUED,TR N°3 F.O,40000.000,13844.000,2692.800,2502750.000,1202070.000,2034810.000,5739630.000,5737100.000,0.000,0.000,0.000,0.000,35.259
+02/2026,Laayoune,FOUM EL OUED,TR N°4 F.O,40000.000,13780.000,2724.480,2488510.000,1194990.000,2023120.000,5706610.000,5707480.000,0.000,0.000,0.000,0.000,35.117
+02/2026,Laayoune,LAAYOUNE,TR N°3 LA,40000.000,33073.000,2724.480,2222940.000,1529640.000,1976060.000,5727740.000,5724000.000,0.000,0.000,0.000,0.000,82.963
+02/2026,Laayoune,LAAYOUNE,TR N°4 LA,40000.000,28702.000,1647.360,3335160.000,2043280.000,2407180.000,7785620.000,7786000.000,0.000,0.000,0.000,0.000,71.873
+02/2026,Boujdour,BOUJDOUR,AUX BJ,50.000,0.000,0.000,330.000,0.000,0.000,332.000,332.000,0.000,0.000,0.000,0.000,0.000
+02/2026,Boujdour,BOUJDOUR,TR N°1 BJ,20000.000,8390.000,0.000,178160.000,667790.000,1297760.000,2113710.000,2113710.000,1346920.000,145180.000,10.000,1492190.000,41.950
+02/2026,Boujdour,BOUJDOUR,TR N°2 BJ,20000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+02/2026,Essemara,ES-SMARA,AUX SM,50.000,0.000,0.000,2473.000,1282.000,2329.000,6084.000,6084.000,0.000,0.000,0.000,0.000,0.000
+02/2026,Essemara,ES-SMARA,TR N°1 SM,10000.000,6510.000,0.000,876363.000,661309.000,900823.000,2438500.000,2430880.000,0.000,0.000,0.000,0.000,65.100
+02/2026,Essemara,ES-SMARA,TR N°2 SM,10000.000,958.320,396.000,1.000,0.000,9362.000,9362.000,9367.000,0.000,0.000,0.000,0.000,10.369
+02/2026,Essemara,SIDI KHATARI,AUX KH,50.000,0.000,0.000,1725.000,907.000,1601.000,4232.000,4232.000,0.000,0.000,0.000,0.000,0.000
+02/2026,Essemara,SIDI KHATARI,TR N°1 KH,5000.000,649.000,249.480,149213.000,78045.000,141098.000,368356.000,368088.000,0.000,0.000,0.000,0.000,13.906
+02/2026,Tarfaya,TARFAYA,TR N°1 TRF,40000.000,4730.000,0.000,825300.000,506120.000,841580.000,2173000.000,2172620.000,0.000,0.000,0.000,0.000,11.825
+02/2026,Tarfaya,TARFAYA,TR N°2 TRF,40000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+02/2026,Laayoune,AL OMRAN,TR N°3 OM,40000.000,20966.000,3312.000,2565900.000,1904620.000,2294860.000,6765390.000,6773820.000,0.000,0.000,0.000,0.000,53.065
+02/2026,Laayoune,AL OMRAN,TR N°4 OM,40000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+03/2026,Laayoune,FOUM EL OUED,TR N°3 F.O,40000.000,10486.000,2122.560,2346040.000,1173580.000,2043510.000,5563140.000,5560270.000,0.000,0.000,0.000,0.000,26.747
+03/2026,Laayoune,FOUM EL OUED,TR N°4 F.O,40000.000,16030.000,823.680,2389260.000,1166790.000,2031980.000,5588040.000,5588450.000,0.000,0.000,0.000,0.000,40.128
+03/2026,Laayoune,LAAYOUNE,TR N°3 LA,40000.000,34436.000,2661.120,5203830.000,3636160.000,4930370.000,13771300.000,13768000.000,0.000,0.000,0.000,0.000,86.347
+03/2026,Laayoune,LAAYOUNE,TR N°4 LA,40000.000,17550.000,1203.840,0.000,115172.000,0.000,115172.000,115000.000,0.000,0.000,0.000,0.000,43.978
+03/2026,Boujdour,BOUJDOUR,AUX BJ,50.000,0.000,0.000,341.000,0.000,0.000,341.000,341.000,0.000,0.000,0.000,0.000,0.000
+03/2026,Boujdour,BOUJDOUR,TR N°1 BJ,20000.000,7885.000,0.000,165730.000,697200.000,1501690.000,2364630.000,2364630.000,1991950.000,144820.000,0.000,2136780.000,39.425
+03/2026,Boujdour,BOUJDOUR,TR N°2 BJ,20000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+03/2026,Essemara,ES-SMARA,AUX SM,50.000,0.000,0.000,3042.000,1540.000,2816.000,7399.000,7399.000,0.000,0.000,0.000,0.000,0.000
+03/2026,Essemara,ES-SMARA,TR N°1 SM,10000.000,6415.000,1124.640,938616.000,755379.000,1106280.000,2800270.000,2801680.000,0.000,0.000,0.000,0.000,65.128
+03/2026,Essemara,ES-SMARA,TR N°2 SM,10000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+03/2026,Essemara,SIDI KHATARI,AUX KH,50.000,7.452,5.604,1795.000,943.000,1705.000,4444.000,4444.000,0.000,0.000,0.000,0.000,18.648
+03/2026,Essemara,SIDI KHATARI,TR N°1 KH,5000.000,641.000,241.560,174675.000,90758.000,160680.000,426113.000,425756.000,0.000,0.000,0.000,0.000,13.700
+03/2026,Tarfaya,TARFAYA,TR N°1 TRF,40000.000,4544.000,456.000,789020.000,435340.000,813670.000,2038030.000,2037900.000,0.000,0.000,0.000,0.000,11.417
+03/2026,Tarfaya,TARFAYA,TR N°2 TRF,40000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+03/2026,Laayoune,AL OMRAN,TR N°3 OM,40000.000,20736.000,2966.400,3067690.000,2414550.000,3256520.000,8738760.000,8747920.000,0.000,0.000,0.000,0.000,52.368
+03/2026,Laayoune,AL OMRAN,TR N°4 OM,40000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+04/2026,Laayoune,FOUM EL OUED,TR N°3 F.O,40000.000,25220.000,4688.640,3983450.000,1894170.000,2694280.000,8571910.000,8563430.000,0.000,0.000,0.000,0.000,64.130
+04/2026,Laayoune,FOUM EL OUED,TR N°4 F.O,40000.000,16854.000,4086.720,3914070.000,1883880.000,2679800.000,8477750.000,8477310.000,0.000,0.000,0.000,0.000,43.356
+04/2026,Laayoune,LAAYOUNE,TR N°3 LA,40000.000,28416.000,2217.600,6416110.000,3333810.000,3485040.000,13235000.000,13232000.000,0.000,0.000,0.000,0.000,71.256
+04/2026,Laayoune,LAAYOUNE,TR N°4 LA,40000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+04/2026,Boujdour,BOUJDOUR,AUX BJ,50.000,0.000,0.000,92.500,0.000,0.000,92.500,92.500,0.000,0.000,0.000,0.000,0.000
+04/2026,Boujdour,BOUJDOUR,TR N°1 BJ,20000.000,8547.000,0.000,118925.000,875050.000,1328650.000,2322620.000,2322620.000,2080510.000,57123.000,26.000,2137660.000,42.735
+04/2026,Boujdour,BOUJDOUR,TR N°2 BJ,20000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+04/2026,Essemara,ES-SMARA,AUX SM,50.000,0.000,0.000,2849.000,1299.000,2141.000,6288.000,6288.000,0.000,0.000,0.000,0.000,0.000
+04/2026,Essemara,ES-SMARA,TR N°1 SM,10000.000,5797.000,506.880,1105070.000,715765.000,833812.000,2654640.000,2740180.000,0.000,0.000,0.000,0.000,58.191
+04/2026,Essemara,ES-SMARA,TR N°2 SM,10000.000,4110.000,1346.400,32115.000,0.000,0.000,32115.000,32120.000,0.000,0.000,0.000,0.000,43.249
+04/2026,Essemara,SIDI KHATARI,AUX KH,50.000,0.000,0.000,1926.000,994.000,1537.000,4457.000,4457.000,0.000,0.000,0.000,0.000,0.000
+04/2026,Essemara,SIDI KHATARI,TR N°1 KH,5000.000,859.000,352.440,184517.000,87558.000,137811.000,409886.000,409385.000,0.000,0.000,0.000,0.000,18.570
+04/2026,Tarfaya,TARFAYA,TR N°1 TRF,40000.000,4980.000,262.000,938810.000,544700.000,770940.000,2254450.000,2254330.000,0.000,0.000,0.000,0.000,12.467
+04/2026,Tarfaya,TARFAYA,TR N°2 TRF,40000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+04/2026,Laayoune,AL OMRAN,TR N°3 OM,40000.000,17626.000,2361.600,3759090.000,2264990.000,2196090.000,8220160.000,8228980.000,0.000,0.000,0.000,0.000,44.459
+04/2026,Laayoune,AL OMRAN,TR N°4 OM,40000.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000,0.000`;
+
+        let appData = [];
+        let months = [];
+        let currentMonth = "04/2026"; 
+        let isDarkMode = true; 
+        let deferredPrompt;
+        
+        let selectedProvince = null;
+        let selectedPoste = null;
+        let selectedTransformer = null;
+        
+        let treemapChart, tarifsChart, provinceChart, transformersChart, monthlyChart, errorChart, gaugeChart;
+
+        function parseNumericValue(val) {
+            if (!val) return 0;
+            return parseFloat(val.replace(/"/g, '').replace(/,/g, '')) || 0;
+        }
+
+        function formatNumber(num) {
+            if (num === null || num === undefined) return '0';
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                let line = lines[i];
+                if (!line) continue;
+                let result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for(let j = 0; j < line.length; j++) {
+                    let char = line[j];
+                    if(char === '"') inQuotes = !inQuotes;
+                    else if(char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+                    else current += char;
+                }
+                result.push(current.trim());
+                
+                let obj = {};
+                headers.forEach((h, index) => {
+                    obj[h] = result[index] ? result[index].replace(/^"|"$/g, '') : '';
+                });
+                data.push(obj);
+            }
+            return data;
+        }
+
+        function initApp() {
+            appData = parseCSV(RAW_CSV_DATA);
+            months = [...new Set(appData.map(d => d['Mois / Année']).filter(m => m))].sort();
+            
+            const monthSelector = document.getElementById('monthSelector');
+            const errorMonthSelector = document.getElementById('errorMonthSelector');
+            const gaugeTrSelector = document.getElementById('gaugeTrSelector');
+            
+            let optAnnee = document.createElement('option');
+            optAnnee.value = "Année"; optAnnee.textContent = "Année (Global)";
+            monthSelector.appendChild(optAnnee);
+
+            months.forEach(m => {
+                let opt = document.createElement('option');
+                opt.value = m; opt.textContent = m;
+                monthSelector.appendChild(opt);
+
+                let errOpt = document.createElement('option');
+                errOpt.value = m; errOpt.textContent = m;
+                errorMonthSelector.appendChild(errOpt);
+            });
+
+            const trSet = new Set();
+            appData.forEach(d => { if(d['Transformateur']) trSet.add(d['Transformateur']); });
+            const trList = Array.from(trSet).sort();
+            
+            let autoOpt = document.createElement('option');
+            autoOpt.value = "auto"; autoOpt.textContent = "Le plus chargé (Auto)";
+            gaugeTrSelector.appendChild(autoOpt);
+
+            trList.forEach(tr => {
+                let opt = document.createElement('option');
+                opt.value = tr; opt.textContent = tr;
+                gaugeTrSelector.appendChild(opt);
+            });
+
+            monthSelector.value = currentMonth;
+            errorMonthSelector.value = currentMonth;
+
+            monthSelector.addEventListener('change', (e) => {
+                currentMonth = e.target.value;
+                if(currentMonth !== "Année") errorMonthSelector.value = currentMonth;
+                updateDashboard();
+            });
+
+            errorMonthSelector.addEventListener('change', (e) => {
+                renderErrorChart(e.target.value);
+            });
+
+            gaugeTrSelector.addEventListener('change', (e) => {
+                selectedTransformer = e.target.value === 'auto' ? null : e.target.value;
+                selectedPoste = null;
+                updateDashboard();
+            });
+
+            document.getElementById('compareMetricSelector').addEventListener('change', () => {
+                renderMonthlyChart();
+            });
+
+            treemapChart = echarts.init(document.getElementById('treemapChart'));
+            tarifsChart = echarts.init(document.getElementById('tarifsChart'));
+            provinceChart = echarts.init(document.getElementById('provinceChart'));
+            transformersChart = echarts.init(document.getElementById('transformersChart'));
+            monthlyChart = echarts.init(document.getElementById('monthlyChart'));
+            errorChart = echarts.init(document.getElementById('errorChart'));
+            gaugeChart = echarts.init(document.getElementById('single-gauge-box'));
+
+            treemapChart.on('click', function (params) {
+                if (params.name) {
+                    selectedPoste = (selectedPoste === params.name) ? null : params.name;
+                    selectedTransformer = null;
+                    gaugeTrSelector.value = "auto";
+                    updateDashboard();
+                }
+            });
+
+            transformersChart.on('click', function (params) {
+                if (params.name) {
+                    if (selectedTransformer === params.name) {
+                        selectedTransformer = null;
+                        gaugeTrSelector.value = "auto";
+                    } else {
+                        selectedTransformer = params.name;
+                        selectedPoste = null;
+                        gaugeTrSelector.value = selectedTransformer;
+                    }
+                    updateDashboard();
+                }
+            });
+
+            setupMapInteractions();
+            updateDashboard();
+            renderMonthlyChart();
+            
+            window.addEventListener('resize', resizeCharts);
+        }
+
+        function resizeCharts() {
+            treemapChart.resize();
+            tarifsChart.resize();
+            provinceChart.resize();
+            transformersChart.resize();
+            monthlyChart.resize();
+            errorChart.resize();
+            gaugeChart.resize();
+        }
+
+        function updateVisualTitles() {
+            document.getElementById('treemap-title').textContent = selectedProvince 
+                ? `Postes - Province : ${selectedProvince}` : "Consommation par Poste (Treemap)";
+
+            if (selectedTransformer) {
+                document.getElementById('tarifs-title').textContent = `Tarifs - TR : ${selectedTransformer}`;
+            } else if (selectedPoste) {
+                document.getElementById('tarifs-title').textContent = `Tarifs - Poste : ${selectedPoste}`;
+            } else if (selectedProvince) {
+                document.getElementById('tarifs-title').textContent = `Tarifs - Prov : ${selectedProvince}`;
+            } else {
+                document.getElementById('tarifs-title').textContent = "Répartition des 3 Tarifs";
+            }
+
+            document.getElementById('province-title').textContent = selectedProvince 
+                ? `Fournie - Prov : ${selectedProvince}` : "Fournie par Province";
+        }
+
+        function updateDashboard() {
+            const baseData = currentMonth === "Année" ? appData : appData.filter(d => d['Mois / Année'] === currentMonth);
+            updateVisualTitles();
+            updateKPIs(baseData);
+            
+            const mapFilteredData = selectedProvince ? baseData.filter(d => d['Province'] === selectedProvince) : baseData;
+            
+            renderTreemap(mapFilteredData);
+            renderTarifs(mapFilteredData);
+            renderProvinceChart(mapFilteredData);
+            renderTransformers(baseData);
+            renderSingleGauge(baseData);
+            renderErrorChart(document.getElementById('errorMonthSelector').value);
+        }
+
+        function updateKPIs(data) {
+            let totalDebite = 0, totalRecu = 0;
+            let transSet = new Set();
+
+            data.forEach(d => {
+                let dVal = parseNumericValue(d['E.Active Débité (principale)']);
+                let rVal = parseNumericValue(d['E.Active Reçu']);
+                totalDebite += dVal;
+                totalRecu += rVal;
+                if (d['Transformateur'] && (dVal > 0 || rVal > 0)) transSet.add(d['Transformateur']);
+            });
+
+            document.getElementById('kpi-fournie').textContent = formatNumber(totalDebite - totalRecu);
+            document.getElementById('kpi-debite').textContent = formatNumber(totalDebite);
+            document.getElementById('kpi-recu').textContent = formatNumber(totalRecu);
+            document.getElementById('kpi-trans').textContent = transSet.size;
+        }
+
+        function setupMapInteractions() {
+            const pins = document.querySelectorAll('.pin-indicator');
+            const tooltip = document.getElementById('map-tooltip');
+
+            pins.forEach(pin => {
+                pin.addEventListener('mousemove', (e) => {
+                    const provinceName = pin.getAttribute('data-province');
+                    const provData = currentMonth === "Année" 
+                        ? appData.filter(d => d['Province'] === provinceName)
+                        : appData.filter(d => d['Mois / Année'] === currentMonth && d['Province'] === provinceName);
+                    
+                    let debite = 0, recu = 0;
+                    let transSet = new Set();
+                    
+                    provData.forEach(d => {
+                        let dVal = parseNumericValue(d['E.Active Débité (principale)']);
+                        let rVal = parseNumericValue(d['E.Active Reçu']);
+                        if (d['Transformateur'] && (dVal > 0 || rVal > 0)) transSet.add(d['Transformateur']);
+                        debite += dVal; recu += rVal;
+                    });
+
+                    tooltip.innerHTML = `
+                        <h4 class="font-bold text-xs border-b border-slate-700 pb-1 mb-1 text-slate-200">${provinceName}</h4>
+                        <div class="flex justify-between text-[11px] gap-4"><span>Fournie:</span><strong class="text-white">${formatNumber(debite - recu)}</strong></div>
+                        <div class="flex justify-between text-[11px] gap-4"><span>Débitée:</span><strong class="text-[#f1c40f]">${formatNumber(debite)}</strong></div>
+                        <div class="flex justify-between text-[11px] gap-4"><span>Reçue:</span><strong class="text-[#e74c3c]">${formatNumber(recu)}</strong></div>
+                    `;
+                    tooltip.style.left = `${e.clientX + 15}px`;
+                    tooltip.style.top = `${e.clientY + 15}px`;
+                    tooltip.style.opacity = '1';
+                });
+
+                pin.addEventListener('mouseleave', () => tooltip.style.opacity = '0');
+
+                pin.addEventListener('click', () => {
+                    const provinceName = pin.getAttribute('data-province');
+                    if (selectedProvince === provinceName) {
+                        selectedProvince = null;
+                        pin.firstElementChild.style.backgroundColor = '#3b82f6';
+                        pin.firstElementChild.style.boxShadow = '0 0 12px 3px rgba(59, 130, 246, 0.7)';
+                    } else {
+                        selectedProvince = provinceName;
+                        pins.forEach(p => {
+                            p.firstElementChild.style.backgroundColor = '#3b82f6';
+                            p.firstElementChild.style.boxShadow = '0 0 12px 3px rgba(59, 130, 246, 0.7)';
+                        });
+                        pin.firstElementChild.style.backgroundColor = '#FFC72C';
+                        pin.firstElementChild.style.boxShadow = '0 0 16px 5px rgba(255, 199, 44, 0.9)';
+                    }
+                    selectedPoste = null; selectedTransformer = null;
+                    document.getElementById('gaugeTrSelector').value = "auto";
+                    updateDashboard();
+                });
+            });
+        }
+
+        function renderTreemap(data) {
+            let postesMap = {};
+            data.forEach(d => {
+                const poste = d['Poste'];
+                const val = parseNumericValue(d['E.Active Débité (principale)']);
+                if(val > 0) postesMap[poste] = (postesMap[poste] || 0) + val;
+            });
+
+            let treemapData = Object.keys(postesMap).map(k => ({ name: k, value: postesMap[k] }));
+
+            treemapChart.setOption({
+                tooltip: { 
+                    backgroundColor: '#111823', 
+                    borderColor: '#374151', 
+                    textStyle: { color: '#ffffff' },
+                    formatter: (p) => '<b>' + p.name + '</b><br/>Consommation : ' + formatNumber(p.value) + ' kWh'
+                },
+                series: [{
+                    type: 'treemap', data: treemapData, roam: false, nodeClick: false,
+                    label: { 
+                        show: true, 
+                        formatter: (params) => params.name + '\n' + formatNumber(params.value) + ' kWh', 
+                        fontSize: 10, fontWeight: '600', color: '#fff' 
+                    },
+                    itemStyle: { borderColor: '#111823', gapWidth: 1 }
+                }]
+            }, true);
+        }
+
+        // Répartition des 3 Tarifs agrandie avec marges réduites
+        function renderTarifs(data) {
+            let plein = 0, pointe = 0, creux = 0;
+            let dataToProcess = data;
+            
+            if (selectedTransformer) dataToProcess = dataToProcess.filter(d => d['Transformateur'] === selectedTransformer);
+            else if (selectedPoste) dataToProcess = dataToProcess.filter(d => d['Poste'] === selectedPoste);
+
+            dataToProcess.forEach(d => {
+                plein += parseNumericValue(d['Plein (Débité)']);
+                pointe += parseNumericValue(d['Pointe (Débité)']);
+                creux += parseNumericValue(d['Creux (Débité)']);
+            });
+
+            tarifsChart.setOption({
+                tooltip: { 
+                    trigger: 'item', backgroundColor: '#111823', borderColor: '#374151', textStyle: { color: '#ffffff' },
+                    formatter: (p) => p.marker + ' ' + p.name + ' : <b>' + formatNumber(p.value) + ' kWh</b> (' + p.percent + '%)'
+                },
+                legend: { 
+                    show: true, bottom: 0, itemWidth: 10, itemHeight: 10, 
+                    textStyle: { color: '#ffffff', fontSize: 9, fontWeight: 'bold' } 
+                },
+                color: ['#f1c40f', '#e74c3c', '#3498db'],
+                series: [{
+                    type: 'pie', radius: '82%', center: ['50%', '42%'],
+                    label: { 
+                        show: true, position: 'inside', 
+                        formatter: (p) => p.percent >= 5 ? formatNumber(p.value) + '\n(' + p.percent + '%)' : '', 
+                        fontSize: 8, fontWeight: '700', color: '#ffffff' 
+                    },
+                    data: [{ value: plein, name: 'Plein' }, { value: pointe, name: 'Pointe' }, { value: creux, name: 'Creux' }]
+                }]
+            }, true);
+        }
+
+        function renderProvinceChart(data) {
+            let provMap = {};
+            data.forEach(d => {
+                const prov = d['Province'];
+                if(!provMap[prov]) provMap[prov] = { debite: 0, recu: 0 };
+                provMap[prov].debite += parseNumericValue(d['E.Active Débité (principale)']);
+                provMap[prov].recu += parseNumericValue(d['E.Active Reçu']);
+            });
+
+            let chartData = Object.keys(provMap).map(k => ({
+                name: k, value: provMap[k].debite - provMap[k].recu
+            })).filter(item => item.value > 0);
+
+            provinceChart.setOption({
+                tooltip: { trigger: 'item', backgroundColor: '#111823', borderColor: '#374151', textStyle: { color: '#ffffff' } },
+                legend: { show: false },
+                series: [{
+                    type: 'pie', radius: ['48%', '78%'], center: ['50%', '50%'],
+                    label: { show: true, position: 'inside', formatter: '{b}', fontSize: 9, color: '#fff', fontWeight: 'bold' },
+                    data: chartData
+                }]
+            }, true);
+        }
+
+        // Configuration Axes et Valeurs en Yellow-Gold (#FFC72C) permanent
+        function renderTransformers(data) {
+            let transMap = {};
+            data.forEach(d => {
+                const trans = d['Transformateur'];
+                const val = parseNumericValue(d['E.Active Débité (principale)']);
+                if(val > 0) transMap[trans] = (transMap[trans] || 0) + val;
+            });
+
+            let sorted = Object.keys(transMap)
+                .map(k => ({ name: k, value: transMap[k] }))
+                .sort((a, b) => b.value - a.value).slice(0, 10).reverse();
+
+            transformersChart.setOption({
+                tooltip: { trigger: 'axis', backgroundColor: '#111823', borderColor: '#374151', textStyle: { color: '#ffffff' } },
+                grid: { left: '2%', right: '20%', bottom: '2%', top: '4%', containLabel: true },
+                xAxis: { 
+                    type: 'value', splitLine: { lineStyle: { color: '#1e293d' } }, 
+                    axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold', formatter: (v) => formatNumber(v) } 
+                },
+                yAxis: { type: 'category', data: sorted.map(i => i.name), axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold' } },
+                series: [{
+                    type: 'bar', data: sorted.map(i => i.value), barWidth: '60%',
+                    label: {
+                        show: true, position: 'right', color: '#FFC72C', fontSize: 9, fontWeight: 'bold', formatter: (p) => formatNumber(p.value)
+                    },
+                    itemStyle: { 
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: '#f1c40f' }, { offset: 1, color: '#e74c3c' }]),
+                        borderRadius: [0, 2, 2, 0] 
+                    }
+                }]
+            }, true);
+        }
+
+        // Jauge de charge : Échelle, graduations et aiguille épaissie en #FFC72C permanent
+        function renderSingleGauge(data) {
+            let trData = [];
+            if (selectedTransformer) {
+                trData = data.filter(d => d['Transformateur'] === selectedTransformer);
+            } else {
+                trData = data.filter(d => d['Transformateur'] && parseNumericValue(d['Taux de Charge']) > 0)
+                             .sort((a, b) => parseNumericValue(b['Taux de Charge']) - parseNumericValue(a['Taux de Charge']));
+            }
+
+            if (trData.length === 0) { gaugeChart.clear(); return; }
+
+            let item = trData[0];
+            let val = parseNumericValue(item['Taux de Charge']);
+            let name = item['Transformateur'];
+
+            document.getElementById('gauge-selected-tr').textContent = "Sélection : " + name;
+
+            var gaugeGradient = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                { offset: 0, color: '#4caf50' }, { offset: 0.6, color: '#ff9800' }, { offset: 1, color: '#f44336' }    
+            ]);
+
+            gaugeChart.setOption({
+                series: [{
+                    type: 'gauge', startAngle: 180, endAngle: 0, radius: '115%', center: ['50%', '85%'],
+                    min: 0, max: 150,
+                    pointer: { length: '75%', width: 8, itemStyle: { color: '#FFC72C' } }, // Aiguille épaisse Jaune-Or
+                    axisLine: { lineStyle: { width: 22, color: [[1, '#e9ecef']] } }, 
+                    progress: { show: true, width: 22, itemStyle: { color: gaugeGradient } },
+                    splitLine: { show: false }, axisTick: { show: false },
+                    axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold', distance: -38 }, // Graduations Jaune-Or
+                    title: { show: false },
+                    detail: { 
+                        offsetCenter: [0, '20%'], color: '#FFC72C', fontSize: 20, fontWeight: '800', formatter: '{value}%', show: true
+                    },
+                    data: [{ value: parseFloat(val.toFixed(1)), name: name }]
+                }]
+            }, true);
+        }
+
+        // Axes de l'écart de comptage configurés en #FFC72C permanent
+        function renderErrorChart(month) {
+            const monthData = month === "Année" ? appData : appData.filter(d => d['Mois / Année'] === month);
+            let categories = [], seriesData = [];
+            let trMap = {};
+
+            monthData.forEach(d => {
+                const tr = d['Transformateur'];
+                if(tr) {
+                    if(!trMap[tr]) trMap[tr] = { p: 0, c: 0 };
+                    trMap[tr].p += parseNumericValue(d['E.Active Débité (principale)']);
+                    trMap[tr].c += parseNumericValue(d['E.Active Débité (control)']);
+                }
+            });
+
+            for (let tr in trMap) {
+                let p = trMap[tr].p, c = trMap[tr].c;
+                if (p > 0) { 
+                    categories.push(tr);
+                    let err = ((p - c) / p) * 100;
+                    seriesData.push({ value: err, itemStyle: { color: err >= 0 ? '#1976d2' : '#ff9800' } });
+                }
+            }
+
+            errorChart.setOption({
+                tooltip: { trigger: 'axis', formatter: (params) => '<b>' + params[0].name + '</b><br/>Écart : ' + params[0].value.toFixed(3) + '%' },
+                grid: { left: '2%', right: '2%', bottom: '5%', top: '8%', containLabel: true },
+                xAxis: { type: 'category', data: categories, axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold', rotate: 18 } },
+                yAxis: { type: 'value', axisLabel: { color: '#FFC72C', fontSize: 11, fontWeight: 'bold' } },
+                series: [{ type: 'bar', data: seriesData, barWidth: '45%' }]
+            }, true);
+        }
+
+        // Raccourcissement de l'échelle de comparaison en GWh avec axes en #FFC72C permanent
+        function renderMonthlyChart() {
+            const metric = document.getElementById('compareMetricSelector').value;
+            let xAxisData = [], seriesData = [];
+
+            months.forEach(m => {
+                const monthData = appData.filter(d => d['Mois / Année'] === m);
+                let debite = 0, recu = 0;
+                monthData.forEach(d => {
+                    debite += parseNumericValue(d['E.Active Débité (principale)']);
+                    recu += parseNumericValue(d['E.Active Reçu']);
+                });
+
+                xAxisData.push(m);
+                if (metric === 'fournie') seriesData.push(debite - recu);
+                else if (metric === 'debite') seriesData.push(debite);
+                else if (metric === 'recu') seriesData.push(recu);
+            });
+
+            monthlyChart.setOption({
+                tooltip: { trigger: 'axis', formatter: (params) => 'Mois ' + params[0].name + '<br/>Total : <b>' + formatNumber(params[0].value) + ' kWh</b>' },
+                grid: { left: '2%', right: '2%', bottom: '2%', top: '10%', containLabel: true },
+                xAxis: { type: 'category', data: xAxisData, axisLabel: { color: '#FFC72C', fontWeight: 'bold', fontSize: 11 } },
+                yAxis: { 
+                    type: 'value', splitLine: { lineStyle: { color: '#1e293d' } }, 
+                    axisLabel: { 
+                        color: '#FFC72C', fontSize: 11, fontWeight: 'bold',
+                        formatter: (value) => (value / 1000000) + ' GWh'
+                    } 
+                },
+                series: [{
+                    type: 'bar', data: seriesData, barWidth: '35%',
+                    itemStyle: { color: '#1976d2', borderRadius: [3, 3, 0, 0] },
+                    label: { show: true, position: 'top', color: '#FFC72C', fontSize: 9, fontWeight: 'bold', formatter: (p) => formatNumber(p.value) }
+                }]
+            }, true);
+        }
+
+        // --- PIPELINE D'INSTALLATION DE LA PWA ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installBtn = document.getElementById('installBtn');
+            installBtn.classList.remove('hidden'); // Devient visible uniquement si l'application n'est pas installée
+            
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        installBtn.classList.add('hidden');
+                    }
+                    deferredPrompt = null;
+                }
+            });
+        });
+
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('installBtn').classList.add('hidden');
+            deferredPrompt = null;
+        });
+
+        // Enregistrement du Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker enregistré avec succès.', reg.scope))
+                    .catch(err => console.error('Échec de l\'enregistrement du Service Worker.', err));
+            });
+        }
+
+        document.getElementById('themeBtn').addEventListener('click', function() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('light-mode');
+            this.innerHTML = isDarkMode ? '☀️ Jour' : '🌙 Nuit';
+            updateDashboard();
+            renderMonthlyChart();
+        });
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

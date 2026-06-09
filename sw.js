@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srm-ls-supervision-v3';
+const CACHE_NAME = 'srm-ls-supervision-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
